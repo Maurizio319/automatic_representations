@@ -1,0 +1,19 @@
+works on chainIDs
+
+given a topology and a trajectory, and file interactions that are provided by directory ..., where csvs indicate hte presence/absence of certain interactions in the trajectory,
+The trajectory may be in the form of a series of pdb files (isolated frames).
+
+the interaction files should contain information about HB bonds, Pi cation, anionic/cationic (salt bridges). I actually don't care about the nature of the interaction, I just want to know if there is an interaction. So don't bother distinguishing those cases (also because this would make the combinations too many)
+
+I want you to generate a script that makes automatically pngs representing these interactions.
+
+The way to do it is the following:
+remove all the interactions that appear more then 98% of the times (these in fact are not interesting enough). Then, group them according to a certain distance threshold (you want not to generate videos for residues that are very close one to the other) or if they appear to behave in a coordinated manner (I have no clue about how to do this, I'm open to suggestions). Once you have done that you need to do the following things:
+
+for each group, zoom on that group (not strong zoom, quite far zoom to capture the surrounding parts), then rotate on two axis by 30 degrees angles. For each rotation, save a numbered image. In a log file, write for each image what kind of orientation have been chosen and what group has been used to do the zooming, in a way such that I can exactly reproduce the image. Also draw some broken lines to indicate if an interaction is present (this is something the csvs in input tell  you).
+There should be a sticks representation of the group residues, in addition to the other representations you may have.
+A way to maintain the axis of rotation once you load back could be to save a state (pse), and then redo the wanted angles
+
+The program may be used to analyze only a subset of the frames
+
+The user should indicate a series of commands to be appalied at the start of the whole procedure for the styling. this should be provided in the input.
