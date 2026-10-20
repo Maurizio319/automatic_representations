@@ -1,0 +1,125 @@
+# Configuration for medoid_snapshots.py -- every parameter of the pipeline.
+# Relative paths are resolved from this file's directory.
+#
+#   python medoid_snapshots.py --config medoid_snapshots.toml --dry-run    # 1. grouping + clustering only
+#   python medoid_snapshots.py --config medoid_snapshots.toml --preview    # 2. one image per group, to tune [style]
+#   python medoid_snapshots.py --config medoid_snapshots.toml --menu       # 3a. a sheet of all angles per medoid
+#   python medoid_snapshots.py --config medoid_snapshots.toml --pick g03_c00_f00000_x030_y150   # 3b. full image of chosen tiles
+#   python medoid_snapshots.py --config medoid_snapshots.toml              # 3. full run
+
+[inputs]
+topology = "/scratch/mgilioli/PHD_Maurizio_BussiLab/simulations_and_analysis/19-metainference_complete_loops/traj_files/conf_mysel_synced.pdb"
+trajectory = "/scratch/mgilioli/PHD_Maurizio_BussiLab/simulations_and_analysis/19-metainference_complete_loops/traj_files/traj-all-PBC-align.xtc"
+interaction_file = ""
+
+[output]
+outdir = ""
+frame_digits = 5              # zero padding of frame numbers in folder/file names
+
+[filter]
+threshold = 0.1               # keep contacts present in [threshold, 1 - threshold] of the frames
+
+[grouping]
+group_distance = 10.0         # Angstrom; smaller -> more, smaller groups
+starting_frame = true         # true: group on frame 0; false: on positions averaged over the trajectory
+
+[clustering]
+min_cluster_size = 2          # HDBSCAN min_cluster_size
+
+[run]
+groups = []                   # group ids to process; empty = all groups
+overwrite = false             # false: skip images already on disk (resume)
+progress_every = 10           # print a progress line every N rendered images
+
+[rotation]
+# x in [x_start, x_stop) and y in [y_start, y_stop): x over 180 deg and y over 360 deg covers every viewing direction once
+step = 45
+x_start = 0
+x_stop = 180
+y_start = 0
+y_stop = 360
+
+[image]
+width = 640
+height = 480
+format = "png"                # "png" or "jpg"
+jpg_quality = 85              # only for format = "jpg"
+ray = true                    # ray-trace (needed for headless rendering)
+
+[menu]
+# --menu: for every medoid, pages of thumbnails of every [rotation] angle (pick one with --pick)
+outdir_name = "menu"          # subfolder of output.outdir
+tiles_per_page = 4            # with step 45: 32 angles -> 8 pages per medoid (2 per x angle)
+columns = 2                   # tiles per row of a page
+tile_width = 640              # pixels of each tile; same as [image]: a tile looks exactly like its picked image
+tile_height = 480
+tile_label_size = 20          # font size of the angle name on each tile
+
+[preview]
+outdir_name = "preview"       # subfolder of output.outdir for --preview images
+xang = 0
+yang = 0
+
+# ---------------------------------------------------------------------------
+# Styling: edit this section, run --preview, look at the images, repeat.
+# ---------------------------------------------------------------------------
+[style]
+background = "white"
+context_representations = ["cartoon"]   # whole system; e.g. ["cartoon"], ["cartoon", "surface"], [] for none
+cartoon_transparency = 0.5
+cartoon_color_protein = "grey80"
+cartoon_color_nucleic = "lightorange"
+
+group_representation = "sticks"         # group residues: "sticks", "lines", "spheres", ...
+hide_hydrogens = true
+stick_radius = 0.2
+ligand_carbon_color = "orange"          # "ligand" residues of the group
+protein_carbon_color = "skyblue"        # protein residues of the group
+
+label_anchor_atoms = ["CA", "C1'", "P"] # first atom found in each residue carries its label
+label_size = 8                          # pixels
+label_color = "black"
+label_outline_color = "default"         # a color for an outline around the text, "default" for none
+label_font_id = 5                       # 5 = sans regular, 7 = sans bold
+label_offset = [0.8, 0.8, 1.0]          # label_position (Angstrom, screen axes): right, up, toward the camera -- just off the anchor atom
+float_labels = true                     # draw labels on top of the structure, never hidden behind it
+label_bg_color = "default"              # box behind each label: a color, or "default" for no box
+label_bg_transparency = 0.25
+label_bg_outline = false                # thin frame around the box
+
+show_inactive_contacts = false          # true: dashed lines also for pairs not in contact in the medoid frame
+# Contact dashes: each one joins two drawn atoms (with hydrogens hidden, a polar
+# contact goes from the donor heavy atom, not its H). Keep dash_gap below
+# stick_radius: a gap at a line end then stays hidden inside the stick, so every
+# line visibly touches both residues.
+polar_contact_color = "green"           # any PyMOL color name; dashes from PyMOL's polar-contacts tool
+closest_contact_color = "magenta"       # dashes between closest heavy atoms (contacts with no polar partner)
+dash_radius = 0.06                      # Angstrom, thickness of the dashes
+dash_gap = 0.12
+dash_length = 0.25
+
+base_orientation = "orient"             # "orient": group's principal axes; "reset": PyMOL default frame
+zoom_buffer = 5.0                       # Angstrom of margin around the group residues
+
+extra_pml = ""                          # optional path to a .pml file with your own PyMOL commands, applied last
+# Your own PyMOL commands, one per line, run after extra_pml on every image
+# (after the scene is built, before the camera is set and the image traced).
+# Same syntax as the PyMOL command line; lines starting with # are skipped.
+# The structure is the object "sys"; the residues of the group are the
+# selection "group_res". Settings the script sets on "sys" (e.g.
+# cartoon_transparency, stick_radius, label_color) must be changed on "sys"
+# too: "set cartoon_transparency, 0.7, sys", not "set cartoon_transparency, 0.7".
+# They are stored in every image / menu page, so --pick and recover replay them.
+extra_commands = """
+# set cartoon_transparency, 0.7, sys
+# color red, resn ARG and elem C
+# set stick_radius, 0.25, sys
+"""
+
+[style.pymol_settings]                  # any other PyMOL setting, applied as cmd.set(name, value)
+ray_trace_mode = 0
+ray_shadows = 0
+antialias = 1
+ray_opaque_background = 1
+depth_cue = 1
+orthoscopic = 0
